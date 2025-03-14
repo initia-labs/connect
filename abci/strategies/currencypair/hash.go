@@ -58,27 +58,22 @@ func (s *HashCurrencyPairStrategy) FromID(ctx sdk.Context, id uint64) (connectty
 	if height != s.previousHeight {
 		s.idCache = make(map[uint64]connecttypes.CurrencyPair, DefaultCacheInitialCapacity)
 		s.previousHeight = height
+
+		// if the currency pair is not found in the cache, attempt to retrieve it from
+		// the x/oracle state by populating the cache with all currency pairs. This
+		// should only be executed once per block height.
+		allCPs := s.oracleKeeper.GetAllCurrencyPairs(ctx)
+		for _, cp := range allCPs {
+			hash, err := CurrencyPairToHashID(cp.String())
+			if err != nil {
+				return connecttypes.CurrencyPair{}, fmt.Errorf("failed to hash currency pair %s: %w", cp.String(), err)
+			}
+
+			s.idCache[hash] = cp
+		}
 	}
 
 	cp, found := s.idCache[id]
-	if found {
-		return cp, nil
-	}
-
-	// if the currency pair is not found in the cache, attempt to retrieve it from
-	// the x/oracle state by populating the cache with all currency pairs. This
-	// should only be executed once per block height.
-	allCPs := s.oracleKeeper.GetAllCurrencyPairs(ctx)
-	for _, cp := range allCPs {
-		hash, err := CurrencyPairToHashID(cp.String())
-		if err != nil {
-			return connecttypes.CurrencyPair{}, fmt.Errorf("failed to hash currency pair %s: %w", cp.String(), err)
-		}
-
-		s.idCache[hash] = cp
-	}
-
-	cp, found = s.idCache[id]
 	if !found {
 		return connecttypes.CurrencyPair{}, fmt.Errorf("currency pair with sha256 hashed ID %d not found in x/oracle state", id)
 	}
