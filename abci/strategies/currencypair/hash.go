@@ -74,11 +74,6 @@ func (s *HashCurrencyPairStrategy) FromID(ctx sdk.Context, id uint64) (connectty
 	}
 
 	cp, found := s.idCache[id]
-	if found {
-		return cp, nil
-	}
-
-	cp, found = s.idCache[id]
 	if !found {
 		return connecttypes.CurrencyPair{}, fmt.Errorf("currency pair with sha256 hashed ID %d not found in x/oracle state", id)
 	}
