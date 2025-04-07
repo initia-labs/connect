@@ -45,19 +45,56 @@ func NewAPIHandler(
 	}, nil
 }
 
+// getBaseAddress extracts the base address from the metadata JSON.
+func (h *APIHandler) getBaseAddress(metadataJSONStr string) (string, error) {
+	var metadata MetadataJSON
+	if err := json.Unmarshal([]byte(metadataJSONStr), &metadata); err != nil {
+		return "", fmt.Errorf("failed to parse metadata JSON: %w", err)
+	}
+
+	addresses := strings.Split(metadata.Address, ",")
+
+	if len(addresses) < 2 {
+		return "", fmt.Errorf("not enough addresses in metadata")
+	}
+
+	// Get the 2nd address
+	// {\"address\":\"0X87428A53E14D24AB19C6CA4939B4DF93B8996CA9/
+	// UNISWAP_V3,0X8236A87084F8B84306F72007F36F2618A5634494/
+	// UNISWAP_V3,0X2260FAC5E5542A773AA44FBCFEDF7C193BC2C599\",\"base_decimals\":8,\"quote_decimals\":8,\"invert\":true}
+	secondAddr := addresses[1]
+
+	var targetAddress string
+	if strings.Contains(secondAddr, "/") {
+		parts := strings.Split(secondAddr, "/")
+		targetAddress = parts[0]
+	} else {
+		targetAddress = secondAddr
+	}
+
+	return targetAddress, nil
+}
+
 // CreateURL returns the URL that is used to fetch data from the GeckoTerminal API for the
 // given tickers. Note that the GeckoTerminal API supports fetching multiple spot prices
 // iff they are all on the same chain.
 func (h *APIHandler) CreateURL(
 	tickers []types.ProviderTicker,
 ) (string, error) {
-	addresses := make([]string, len(tickers))
-	for i, ticker := range tickers {
-		addresses[i] = ticker.GetOffChainTicker()
-		h.cache.Add(ticker)
+	if len(tickers) == 0 {
+		return "", fmt.Errorf("no tickers provided")
 	}
 
-	return fmt.Sprintf(h.api.Endpoints[0].URL, strings.Join(addresses, ",")), nil
+	metadataJSONStr := tickers[0].GetJSON()
+
+	targetAddress, err := h.getBaseAddress(metadataJSONStr)
+	if err != nil {
+		return "", err
+	}
+
+	h.cache.Add(tickers[0])
+
+	return fmt.Sprintf(h.api.Endpoints[0].URL, targetAddress), nil
 }
 
 // ParseResponse parses the response from the GeckoTerminal API. The response is expected
@@ -67,7 +104,6 @@ func (h *APIHandler) ParseResponse(
 	tickers []types.ProviderTicker,
 	resp *http.Response,
 ) types.PriceResponse {
-	// Parse the response.
 	var result GeckoTerminalResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return types.NewPriceResponseWithErr(
@@ -81,46 +117,27 @@ func (h *APIHandler) ParseResponse(
 		unresolved = make(types.UnResolvedPrices)
 	)
 
-	data := result.Data
-	if data.Type != ExpectedResponseType {
-		err := fmt.Errorf("expected type %s, got %s", ExpectedResponseType, data.Type)
+	price := result.Data.Attributes.PriceUSD
+	if price == "" {
+		err := fmt.Errorf("no price found in response")
 		return types.NewPriceResponseWithErr(
 			tickers,
-			providertypes.NewErrorWithCode(err, providertypes.ErrorInvalidResponse),
+			providertypes.NewErrorWithCode(err, providertypes.ErrorNoResponse),
 		)
 	}
 
-	// Filter out the responses that are not expected.
-	attributes := data.Attributes
-	for address, price := range attributes.TokenPrices {
-		ticker, ok := h.cache.FromOffChainTicker(address)
-		if !ok {
-			err := fmt.Errorf("no ticker for address %s", address)
-			return types.NewPriceResponseWithErr(
-				tickers,
-				providertypes.NewErrorWithCode(err, providertypes.ErrorUnknownPair),
-			)
+	priceFloat, err := math.Float64StringToBigFloat(price)
+	if err != nil {
+		wErr := fmt.Errorf("failed to convert price %s to big.Float: %w", price, err)
+		unresolved[tickers[0]] = providertypes.UnresolvedResult{
+			ErrorWithCode: providertypes.NewErrorWithCode(wErr, providertypes.ErrorFailedToParsePrice),
 		}
-
-		// Convert the price to a big.Float.
-		price, err := math.Float64StringToBigFloat(price)
-		if err != nil {
-			wErr := fmt.Errorf("failed to convert price to big.Float: %w", err)
-			unresolved[ticker] = providertypes.UnresolvedResult{
-				ErrorWithCode: providertypes.NewErrorWithCode(
-					wErr,
-					providertypes.ErrorFailedToParsePrice,
-				),
-			}
-
-			continue
-		}
-
-		resolved[ticker] = types.NewPriceResult(price, time.Now().UTC())
+		return types.NewPriceResponse(resolved, unresolved)
 	}
 
-	// Add all expected tickers that did not return a response to the unresolved
-	// map.
+	resolved[tickers[0]] = types.NewPriceResult(priceFloat, time.Now().UTC())
+
+	// Add all expected tickers that did not return a response to the unresolved map
 	for _, ticker := range tickers {
 		_, resolvedOk := resolved[ticker]
 		_, unresolvedOk := unresolved[ticker]
