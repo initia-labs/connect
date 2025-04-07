@@ -13,6 +13,7 @@ import (
 	"github.com/skip-mev/connect/v2/providers/apis/defi/raydium"
 	"github.com/skip-mev/connect/v2/providers/apis/defi/uniswapv3"
 	"github.com/skip-mev/connect/v2/providers/apis/dydx"
+	"github.com/skip-mev/connect/v2/providers/apis/geckoterminal"
 	krakenapi "github.com/skip-mev/connect/v2/providers/apis/kraken"
 	"github.com/skip-mev/connect/v2/providers/apis/marketmap"
 	"github.com/skip-mev/connect/v2/providers/apis/polymarket"
@@ -75,6 +76,11 @@ var (
 		{
 			Name: coingecko.Name,
 			API:  coingecko.DefaultAPIConfig,
+			Type: types.ConfigType,
+		},
+		{
+			Name: geckoterminal.Name,
+			API:  geckoterminal.DefaultETHAPIConfig,
 			Type: types.ConfigType,
 		},
 		{
