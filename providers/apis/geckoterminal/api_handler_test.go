@@ -1,285 +1,217 @@
 package geckoterminal
 
 import (
-	"math/big"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/skip-mev/connect/v2/oracle/config"
-	"github.com/skip-mev/connect/v2/oracle/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/skip-mev/connect/v2/oracle/types"
+	"github.com/skip-mev/connect/v2/providers/base/testutils"
+	providertypes "github.com/skip-mev/connect/v2/providers/types"
 )
 
-func TestNewAPIHandler(t *testing.T) {
-	tests := []struct {
-		name        string
-		apiConfig   config.APIConfig
-		expectError bool
+func TestGetTokenInfo(t *testing.T) {
+	testCases := []struct {
+		name            string
+		metadataJSON    string
+		expectedNetwork string
+		expectedAddr    string
+		expectError     bool
 	}{
 		{
-			name: "valid config",
-			apiConfig: config.APIConfig{
-				Name:    Name,
-				Enabled: true,
-				Endpoints: []config.Endpoint{
-					{
-						URL: "https://api.geckoterminal.com/api/v2/networks/ethereum/tokens/%s",
-					},
-				},
-				MaxQueries:       1,
-				Atomic:           false,
-				Timeout:          500 * time.Millisecond,
-				Interval:         20 * time.Second,
-				ReconnectTimeout: 2000 * time.Millisecond,
-			},
-			expectError: false,
+			name:            "valid metadata with network",
+			metadataJSON:    `{"network": "eth", "address": "0x123"}`,
+			expectedNetwork: "eth",
+			expectedAddr:    "0x123",
+			expectError:     false,
 		},
 		{
-			name: "wrong name",
-			apiConfig: config.APIConfig{
-				Name:    "wrong_name",
-				Enabled: true,
-			},
-			expectError: true,
+			name:            "valid metadata without network (should default to eth)",
+			metadataJSON:    `{"address": "0x123"}`,
+			expectedNetwork: "eth",
+			expectedAddr:    "0x123",
+			expectError:     false,
 		},
 		{
-			name: "disabled",
-			apiConfig: config.APIConfig{
-				Name:    Name,
-				Enabled: false,
-			},
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			handler, err := NewAPIHandler(tt.apiConfig)
-			if tt.expectError {
-				require.Error(t, err)
-				require.Nil(t, handler)
-			} else {
-				require.NoError(t, err)
-				require.NotNil(t, handler)
-				require.Equal(t, tt.apiConfig, handler.(*APIHandler).api)
-			}
-		})
-	}
-}
-
-func TestGetBaseAddress(t *testing.T) {
-	tests := []struct {
-		name         string
-		metadataJSON string
-		expectedAddr string
-		expectError  bool
-	}{
-		{
-			name: "valid metadata",
-			metadataJSON: `{
-				"address": "0X87428A53E14D24AB19C6CA4939B4DF93B8996CA9/UNISWAP_V3,0X8236A87084F8B84306F72007F36F2618A5634494/UNISWAP_V3,0X2260FAC5E5542A773AA44FBCFEDF7C193BC2C599",
-				"base_decimals": 8,
-				"quote_decimals": 8,
-				"invert": true
-			}`,
-			expectedAddr: "0X8236A87084F8B84306F72007F36F2618A5634494",
-			expectError:  false,
-		},
-		{
-			name: "invalid json",
-			metadataJSON: `{
-				invalid json
-			}`,
-			expectedAddr: "",
+			name:         "invalid json",
+			metadataJSON: `{invalid json}`,
 			expectError:  true,
 		},
 		{
-			name: "insufficient addresses",
-			metadataJSON: `{
-				"address": "0X87428A53E14D24AB19C6CA4939B4DF93B8996CA9",
-				"base_decimals": 8,
-				"quote_decimals": 8,
-				"invert": true
-			}`,
-			expectedAddr: "",
+			name:         "missing address",
+			metadataJSON: `{"network": "eth"}`,
 			expectError:  true,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			handler := &APIHandler{}
-			addr, err := handler.getBaseAddress(tt.metadataJSON)
-			if tt.expectError {
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			h, err := NewAPIHandler(DefaultETHAPIConfig)
+			require.NoError(t, err)
+
+			handler := h.(*APIHandler)
+			network, addr, err := handler.GetTokenInfo(tc.metadataJSON)
+			if tc.expectError {
 				require.Error(t, err)
-				require.Empty(t, addr)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tt.expectedAddr, addr)
+				require.Equal(t, tc.expectedNetwork, network)
+				require.Equal(t, tc.expectedAddr, addr)
 			}
 		})
 	}
 }
 
 func TestCreateURL(t *testing.T) {
-	tests := []struct {
+	testCases := []struct {
 		name        string
-		apiConfig   config.APIConfig
-		tickers     []types.ProviderTicker
+		ticker      types.ProviderTicker
 		expectedURL string
 		expectError bool
 	}{
 		{
 			name: "valid ticker",
-			apiConfig: config.APIConfig{
-				Name:    Name,
-				Enabled: true,
-				Endpoints: []config.Endpoint{
-					{
-						URL: "https://api.geckoterminal.com/api/v2/networks/ethereum/tokens/%s",
-					},
-				},
+			ticker: types.DefaultProviderTicker{
+				OffChainTicker: "0x123",
+				JSON:           `{"network": "eth", "address": "0x123"}`,
 			},
-			tickers: []types.ProviderTicker{
-				types.NewProviderTicker(
-					"LBTC-USD",
-					`{"address":"0X87428A53E14D24AB19C6CA4939B4DF93B8996CA9/UNISWAP_V3,0X8236A87084F8B84306F72007F36F2618A5634494/UNISWAP_V3,0X2260FAC5E5542A773AA44FBCFEDF7C193BC2C599","base_decimals":8,"quote_decimals":8,"invert":true}`,
-				),
-			},
-			expectedURL: "https://api.geckoterminal.com/api/v2/networks/ethereum/tokens/0X8236A87084F8B84306F72007F36F2618A5634494",
+			expectedURL: "https://api.geckoterminal.com/api/v2/simple/networks/eth/token_price/0x123",
 			expectError: false,
 		},
 		{
-			name: "no tickers",
-			apiConfig: config.APIConfig{
-				Name:    Name,
-				Enabled: true,
-				Endpoints: []config.Endpoint{
-					{
-						URL: "https://api.geckoterminal.com/api/v2/networks/ethereum/tokens/%s",
-					},
-				},
+			name: "invalid metadata json",
+			ticker: types.DefaultProviderTicker{
+				OffChainTicker: "0x123",
+				JSON:           `{invalid json}`,
 			},
-			tickers:     []types.ProviderTicker{},
-			expectedURL: "",
 			expectError: true,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			handler, err := NewAPIHandler(tt.apiConfig)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			h, err := NewAPIHandler(DefaultETHAPIConfig)
 			require.NoError(t, err)
 
-			url, err := handler.CreateURL(tt.tickers)
-			if tt.expectError {
+			url, err := h.CreateURL([]types.ProviderTicker{tc.ticker})
+			if tc.expectError {
 				require.Error(t, err)
-				require.Empty(t, url)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tt.expectedURL, url)
+				require.Equal(t, tc.expectedURL, url)
 			}
 		})
 	}
 }
 
 func TestParseResponse(t *testing.T) {
-	tests := []struct {
+	testCases := []struct {
 		name          string
-		tickers       []types.ProviderTicker
-		responseBody  string
-		expectedPrice *big.Float
+		ticker        types.ProviderTicker
+		response      *http.Response
+		expectedPrice float64
 		expectError   bool
+		errorCode     providertypes.ErrorCode
 	}{
 		{
 			name: "valid response",
-			tickers: []types.ProviderTicker{
-				types.NewProviderTicker(
-					"LBTC-USD",
-					`{"address":"0X87428A53E14D24AB19C6CA4939B4DF93B8996CA9/UNISWAP_V3,0X8236A87084F8B84306F72007F36F2618A5634494/UNISWAP_V3,0X2260FAC5E5542A773AA44FBCFEDF7C193BC2C599","base_decimals":8,"quote_decimals":8,"invert":true}`,
-				),
+			ticker: types.DefaultProviderTicker{
+				OffChainTicker: "0x123",
+				JSON:           `{"network": "eth", "address": "0x123"}`,
 			},
-			responseBody: `{
+			response: testutils.CreateResponseFromJSON(`{
 				"data": {
+					"type": "simple_token_price",
 					"attributes": {
-						"price_usd": "50000.00"
+						"token_prices": {
+							"0x123": "1.23"
+						}
 					}
 				}
-			}`,
-			expectedPrice: big.NewFloat(50000.00),
+			}`),
+			expectedPrice: 1.23,
 			expectError:   false,
 		},
 		{
-			name: "invalid json response",
-			tickers: []types.ProviderTicker{
-				types.NewProviderTicker(
-					"LBTC-USD",
-					`{"address":"0X87428A53E14D24AB19C6CA4939B4DF93B8996CA9/UNISWAP_V3,0X8236A87084F8B84306F72007F36F2618A5634494/UNISWAP_V3,0X2260FAC5E5542A773AA44FBCFEDF7C193BC2C599","base_decimals":8,"quote_decimals":8,"invert":true}`,
-				),
+			name: "invalid response type",
+			ticker: types.DefaultProviderTicker{
+				OffChainTicker: "0x123",
+				JSON:           `{"network": "eth", "address": "0x123"}`,
 			},
-			responseBody: `{
-				invalid json
-			}`,
-			expectedPrice: nil,
-			expectError:   true,
+			response: testutils.CreateResponseFromJSON(`{
+				"data": {
+					"type": "wrong_type",
+					"attributes": {
+						"token_prices": {
+							"0x123": "1.23"
+						}
+					}
+				}
+			}`),
+			expectError: true,
+			errorCode:   providertypes.ErrorInvalidResponse,
 		},
 		{
-			name: "missing price in response",
-			tickers: []types.ProviderTicker{
-				types.NewProviderTicker(
-					"LBTC-USD",
-					`{"address":"0X87428A53E14D24AB19C6CA4939B4DF93B8996CA9/UNISWAP_V3,0X8236A87084F8B84306F72007F36F2618A5634494/UNISWAP_V3,0X2260FAC5E5542A773AA44FBCFEDF7C193BC2C599","base_decimals":8,"quote_decimals":8,"invert":true}`,
-				),
+			name: "invalid price format",
+			ticker: types.DefaultProviderTicker{
+				OffChainTicker: "0x123",
+				JSON:           `{"network": "eth", "address": "0x123"}`,
 			},
-			responseBody: `{
+			response: testutils.CreateResponseFromJSON(`{
 				"data": {
-					"attributes": {}
+					"type": "simple_token_price",
+					"attributes": {
+						"token_prices": {
+							"0x123": "invalid_price"
+						}
+					}
 				}
-			}`,
-			expectedPrice: nil,
-			expectError:   true,
+			}`),
+			expectError: true,
+			errorCode:   providertypes.ErrorFailedToParsePrice,
+		},
+		{
+			name: "missing price for ticker",
+			ticker: types.DefaultProviderTicker{
+				OffChainTicker: "0x123",
+				JSON:           `{"network": "eth", "address": "0x123"}`,
+			},
+			response: testutils.CreateResponseFromJSON(`{
+				"data": {
+					"type": "simple_token_price",
+					"attributes": {
+						"token_prices": {}
+					}
+				}
+			}`),
+			expectError: true,
+			errorCode:   providertypes.ErrorNoResponse,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			handler := &APIHandler{
-				api: config.APIConfig{
-					Name:    Name,
-					Enabled: true,
-				},
-			}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			h, err := NewAPIHandler(DefaultETHAPIConfig)
+			require.NoError(t, err)
 
-			// Create a test server
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				w.Write([]byte(tt.responseBody))
-			}))
-			defer server.Close()
+			// First create URL to populate cache
+			_, err = h.CreateURL([]types.ProviderTicker{tc.ticker})
+			require.NoError(t, err)
 
-			// Create a response object
-			resp := &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       http.NoBody,
-			}
+			resp := h.ParseResponse([]types.ProviderTicker{tc.ticker}, tc.response)
 
-			// Parse the response
-			result := handler.ParseResponse(tt.tickers, resp)
-
-			if tt.expectError {
-				require.NotEmpty(t, result.UnResolved)
-				require.Empty(t, result.Resolved)
+			if tc.expectError {
+				require.Len(t, resp.Resolved, 0)
+				require.Len(t, resp.UnResolved, 1)
+				require.Equal(t, tc.errorCode, resp.UnResolved[tc.ticker].ErrorWithCode.Code())
 			} else {
-				require.Empty(t, result.UnResolved)
-				require.NotEmpty(t, result.Resolved)
-
-				price, ok := result.Resolved[tt.tickers[0]]
-				require.True(t, ok)
-				require.NotNil(t, price)
-				require.Equal(t, tt.expectedPrice, price.Value)
-				require.True(t, time.Since(price.Timestamp) < time.Second)
+				require.Len(t, resp.Resolved, 1)
+				require.Len(t, resp.UnResolved, 0)
+				price, _ := resp.Resolved[tc.ticker].Value.Float64()
+				require.InDelta(t, tc.expectedPrice, price, 0.0001)
+				require.True(t, resp.Resolved[tc.ticker].Timestamp.After(time.Now().Add(-time.Second)))
 			}
 		})
 	}
