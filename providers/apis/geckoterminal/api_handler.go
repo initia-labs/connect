@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/skip-mev/connect/v2/oracle/config"
@@ -44,45 +45,27 @@ func NewAPIHandler(
 	}, nil
 }
 
-// GetTokenInfo extracts the base address from the metadata JSON.
-func (h *APIHandler) GetTokenInfo(metadataJSONStr string) (string, string, error) {
-	var metadata GeckoterminalMetadata
-	if err := json.Unmarshal([]byte(metadataJSONStr), &metadata); err != nil {
-		return "", "", fmt.Errorf("failed to parse metadata JSON: %w", err)
-	}
-
-	network := metadata.Network
-	if network == "" {
-		network = "eth" // default eth
-	}
-	address := metadata.Address
-	if address == "" {
-		return network, "", fmt.Errorf("no address found in metadata")
-	}
-
-	return network, address, nil
-}
-
 // CreateURL returns the URL that is used to fetch data from the GeckoTerminal API for the
 // given tickers. Note that the GeckoTerminal API supports fetching multiple spot prices
 // iff they are all on the same chain.
 func (h *APIHandler) CreateURL(
 	tickers []types.ProviderTicker,
 ) (string, error) {
-	if len(tickers) == 0 {
-		return "", fmt.Errorf("no tickers provided")
+	addresses := make([]string, len(tickers))
+	var network string
+	for i, ticker := range tickers {
+		addresses[i] = ticker.GetOffChainTicker()
+		h.cache.Add(ticker)
+
+		metaDataJSON := ticker.GetJSON()
+		var metadata GeckoterminalMetadata
+		if err := json.Unmarshal([]byte(metaDataJSON), &metadata); err != nil {
+			return h.api.Endpoints[0].URL, fmt.Errorf("failed to parse metadata JSON: %w", err)
+		}
+		network = metadata.Network
 	}
 
-	metadataJSONStr := tickers[0].GetJSON()
-
-	network, address, err := h.GetTokenInfo(metadataJSONStr)
-	if err != nil {
-		return "", err
-	}
-
-	h.cache.Add(tickers[0])
-
-	return fmt.Sprintf(h.api.Endpoints[0].URL, network, address), nil
+	return fmt.Sprintf(h.api.Endpoints[0].URL, network, strings.Join(addresses, ",")), nil
 }
 
 // ParseResponse parses the response from the GeckoTerminal API. The response is expected
@@ -116,10 +99,10 @@ func (h *APIHandler) ParseResponse(
 
 	// Filter out the responses that are not expected.
 	attributes := data.Attributes
-	for _, price := range attributes.TokenPrices {
-		ticker, ok := h.cache.FromOffChainTicker(tickers[0].GetOffChainTicker())
+	for address, price := range attributes.TokenPrices {
+		ticker, ok := h.cache.FromOffChainTicker(address)
 		if !ok {
-			err := fmt.Errorf("no ticker for address %s", ticker.GetOffChainTicker())
+			err := fmt.Errorf("no ticker for address %s", address)
 			return types.NewPriceResponseWithErr(
 				tickers,
 				providertypes.NewErrorWithCode(err, providertypes.ErrorUnknownPair),

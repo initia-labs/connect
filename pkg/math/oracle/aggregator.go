@@ -3,7 +3,6 @@ package oracle
 import (
 	"fmt"
 	"math/big"
-	"strings"
 	"sync"
 
 	"go.uber.org/zap"
@@ -212,12 +211,7 @@ func (m *IndexPriceAggregator) CalculateAdjustedPrice(
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO: Refactor this special case handling for LBTC to use a more generic approach.
-	if strings.Contains(cfg.OffChainTicker, "LBTC") {
-		return price, nil
-	}
-
+	
 	// Make sure that the price is adjusted by the market price.
 	return new(big.Float).Mul(price, normalizeByIndexPrice), nil
 }
