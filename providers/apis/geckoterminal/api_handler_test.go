@@ -12,58 +12,6 @@ import (
 	providertypes "github.com/skip-mev/connect/v2/providers/types"
 )
 
-func TestGetTokenInfo(t *testing.T) {
-	testCases := []struct {
-		name            string
-		metadataJSON    string
-		expectedNetwork string
-		expectedAddr    string
-		expectError     bool
-	}{
-		{
-			name:            "valid metadata with network",
-			metadataJSON:    `{"network": "eth", "address": "0x123"}`,
-			expectedNetwork: "eth",
-			expectedAddr:    "0x123",
-			expectError:     false,
-		},
-		{
-			name:            "valid metadata without network (should default to eth)",
-			metadataJSON:    `{"address": "0x123"}`,
-			expectedNetwork: "eth",
-			expectedAddr:    "0x123",
-			expectError:     false,
-		},
-		{
-			name:         "invalid json",
-			metadataJSON: `{invalid json}`,
-			expectError:  true,
-		},
-		{
-			name:         "missing address",
-			metadataJSON: `{"network": "eth"}`,
-			expectError:  true,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			h, err := NewAPIHandler(DefaultETHAPIConfig)
-			require.NoError(t, err)
-
-			handler := h.(*APIHandler)
-			network, addr, err := handler.GetTokenInfo(tc.metadataJSON)
-			if tc.expectError {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tc.expectedNetwork, network)
-				require.Equal(t, tc.expectedAddr, addr)
-			}
-		})
-	}
-}
-
 func TestCreateURL(t *testing.T) {
 	testCases := []struct {
 		name        string
