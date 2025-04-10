@@ -17,10 +17,8 @@ const (
 	Name = "gecko_terminal_api"
 
 	// URL is the root URL for the GeckoTerminal API.
-	ETH_URL = "https://api.geckoterminal.com/api/v2/simple/networks/eth/token_price/%s"
+	URL = "https://api.geckoterminal.com/api/v2/simple/networks/%s/token_price/%s"
 
-	// ExpectedResponseType is the expected attribute name for the response type in the
-	// GeckoTerminal API response.
 	ExpectedResponseType = "simple_token_price"
 )
 
@@ -34,7 +32,7 @@ var DefaultETHAPIConfig = config.APIConfig{
 	Interval:         20 * time.Second,
 	ReconnectTimeout: 2000 * time.Millisecond,
 	MaxQueries:       1,
-	Endpoints:        []config.Endpoint{{URL: ETH_URL}},
+	Endpoints:        []config.Endpoint{{URL: URL}},
 }
 
 type (

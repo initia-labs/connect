@@ -211,7 +211,7 @@ func (m *IndexPriceAggregator) CalculateAdjustedPrice(
 	if err != nil {
 		return nil, err
 	}
-
+	
 	// Make sure that the price is adjusted by the market price.
 	return new(big.Float).Mul(price, normalizeByIndexPrice), nil
 }

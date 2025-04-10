@@ -52,12 +52,20 @@ func (h *APIHandler) CreateURL(
 	tickers []types.ProviderTicker,
 ) (string, error) {
 	addresses := make([]string, len(tickers))
+	var network string
 	for i, ticker := range tickers {
 		addresses[i] = ticker.GetOffChainTicker()
 		h.cache.Add(ticker)
+
+		metaDataJSON := ticker.GetJSON()
+		var metadata GeckoterminalMetadata
+		if err := json.Unmarshal([]byte(metaDataJSON), &metadata); err != nil {
+			return h.api.Endpoints[0].URL, fmt.Errorf("failed to parse metadata JSON: %w", err)
+		}
+		network = metadata.Network
 	}
 
-	return fmt.Sprintf(h.api.Endpoints[0].URL, strings.Join(addresses, ",")), nil
+	return fmt.Sprintf(h.api.Endpoints[0].URL, network, strings.Join(addresses, ",")), nil
 }
 
 // ParseResponse parses the response from the GeckoTerminal API. The response is expected
@@ -67,7 +75,6 @@ func (h *APIHandler) ParseResponse(
 	tickers []types.ProviderTicker,
 	resp *http.Response,
 ) types.PriceResponse {
-	// Parse the response.
 	var result GeckoTerminalResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return types.NewPriceResponseWithErr(
@@ -119,8 +126,7 @@ func (h *APIHandler) ParseResponse(
 		resolved[ticker] = types.NewPriceResult(price, time.Now().UTC())
 	}
 
-	// Add all expected tickers that did not return a response to the unresolved
-	// map.
+	// Add all expected tickers that did not return a response to the unresolved map
 	for _, ticker := range tickers {
 		_, resolvedOk := resolved[ticker]
 		_, unresolvedOk := unresolved[ticker]

@@ -1,8 +1,6 @@
-package geckoterminal_test
+package geckoterminal
 
 import (
-	"fmt"
-	"math/big"
 	"net/http"
 	"testing"
 	"time"
@@ -10,57 +8,47 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skip-mev/connect/v2/oracle/types"
-	"github.com/skip-mev/connect/v2/providers/apis/geckoterminal"
 	"github.com/skip-mev/connect/v2/providers/base/testutils"
 	providertypes "github.com/skip-mev/connect/v2/providers/types"
-)
-
-var (
-	mogusd = types.DefaultProviderTicker{
-		OffChainTicker: "0xaaee1a9723aadb7afa2810263653a34ba2c21c7a",
-	}
-	pepeusd = types.DefaultProviderTicker{
-		OffChainTicker: "0x6982508145454Ce325dDbE47a25d4ec3d2311933",
-	}
 )
 
 func TestCreateURL(t *testing.T) {
 	testCases := []struct {
 		name        string
-		cps         []types.ProviderTicker
-		url         string
-		expectedErr bool
+		ticker      types.ProviderTicker
+		expectedURL string
+		expectError bool
 	}{
 		{
-			name: "valid",
-			cps: []types.ProviderTicker{
-				mogusd,
+			name: "valid ticker",
+			ticker: types.DefaultProviderTicker{
+				OffChainTicker: "0x123",
+				JSON:           `{"network": "eth", "address": "0x123"}`,
 			},
-			url:         "https://api.geckoterminal.com/api/v2/simple/networks/eth/token_price/0xaaee1a9723aadb7afa2810263653a34ba2c21c7a",
-			expectedErr: false,
+			expectedURL: "https://api.geckoterminal.com/api/v2/simple/networks/eth/token_price/0x123",
+			expectError: false,
 		},
 		{
-			name: "multiple currency pairs",
-			cps: []types.ProviderTicker{
-				mogusd,
-				pepeusd,
+			name: "invalid metadata json",
+			ticker: types.DefaultProviderTicker{
+				OffChainTicker: "0x123",
+				JSON:           `{invalid json}`,
 			},
-			url:         "https://api.geckoterminal.com/api/v2/simple/networks/eth/token_price/0xaaee1a9723aadb7afa2810263653a34ba2c21c7a,0x6982508145454Ce325dDbE47a25d4ec3d2311933",
-			expectedErr: false,
+			expectError: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			h, err := geckoterminal.NewAPIHandler(geckoterminal.DefaultETHAPIConfig)
+			h, err := NewAPIHandler(DefaultETHAPIConfig)
 			require.NoError(t, err)
 
-			url, err := h.CreateURL(tc.cps)
-			if tc.expectedErr {
+			url, err := h.CreateURL([]types.ProviderTicker{tc.ticker})
+			if tc.expectError {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tc.url, url)
+				require.Equal(t, tc.expectedURL, url)
 			}
 		})
 	}
@@ -68,211 +56,110 @@ func TestCreateURL(t *testing.T) {
 
 func TestParseResponse(t *testing.T) {
 	testCases := []struct {
-		name     string
-		cps      []types.ProviderTicker
-		response *http.Response
-		expected types.PriceResponse
+		name          string
+		ticker        types.ProviderTicker
+		response      *http.Response
+		expectedPrice float64
+		expectError   bool
+		errorCode     providertypes.ErrorCode
 	}{
 		{
-			name: "valid",
-			cps: []types.ProviderTicker{
-				mogusd,
+			name: "valid response",
+			ticker: types.DefaultProviderTicker{
+				OffChainTicker: "0x123",
+				JSON:           `{"network": "eth", "address": "0x123"}`,
 			},
-			response: testutils.CreateResponseFromJSON(
-				`
-{
-	"data": {
-		"id": "8ab62c52-6df2-4613-ad2d-dab08e9e4c8e",
-		"type": "simple_token_price",
-		"attributes": {
-		"token_prices": {
-				"0xaaee1a9723aadb7afa2810263653a34ba2c21c7a": "0.000000957896146138212"
-			}
-		}
-	}
-}
-	`,
-			),
-			expected: types.NewPriceResponse(
-				types.ResolvedPrices{
-					mogusd: {
-						Value: big.NewFloat(0.000000957896146138212),
-					},
-				},
-				types.UnResolvedPrices{},
-			),
+			response: testutils.CreateResponseFromJSON(`{
+				"data": {
+					"type": "simple_token_price",
+					"attributes": {
+						"token_prices": {
+							"0x123": "1.23"
+						}
+					}
+				}
+			}`),
+			expectedPrice: 1.23,
+			expectError:   false,
 		},
 		{
-			name: "malformed response",
-			cps: []types.ProviderTicker{
-				mogusd,
+			name: "invalid response type",
+			ticker: types.DefaultProviderTicker{
+				OffChainTicker: "0x123",
+				JSON:           `{"network": "eth", "address": "0x123"}`,
 			},
-			response: testutils.CreateResponseFromJSON(
-				`
-{
-	"data": {
-		"id": "8ab62c52-6df2-4613-ad2d-dab08e9e4c8e",
-		"type": "simple_token_price",
-		"attributes": {
-		"token_prices": {
-				"0xaaee1a9723aadb7afa2810263653a34ba2c21c7a": "0.000000957896146138212",
-			}
-		}
-	}
-}
-			`,
-			),
-			expected: types.NewPriceResponse(
-				types.ResolvedPrices{},
-				types.UnResolvedPrices{
-					mogusd: providertypes.UnresolvedResult{
-						ErrorWithCode: providertypes.NewErrorWithCode(
-							fmt.Errorf("bad format"), providertypes.ErrorAPIGeneral),
-					},
-				},
-			),
+			response: testutils.CreateResponseFromJSON(`{
+				"data": {
+					"type": "wrong_type",
+					"attributes": {
+						"token_prices": {
+							"0x123": "1.23"
+						}
+					}
+				}
+			}`),
+			expectError: true,
+			errorCode:   providertypes.ErrorInvalidResponse,
 		},
 		{
-			name: "unable to parse float",
-			cps: []types.ProviderTicker{
-				mogusd,
+			name: "invalid price format",
+			ticker: types.DefaultProviderTicker{
+				OffChainTicker: "0x123",
+				JSON:           `{"network": "eth", "address": "0x123"}`,
 			},
-			response: testutils.CreateResponseFromJSON(
-				`
-{
-	"data": {
-		"id": "8ab62c52-6df2-4613-ad2d-dab08e9e4c8e",
-		"type": "simple_token_price",
-		"attributes": {
-		"token_prices": {
-				"0xaaee1a9723aadb7afa2810263653a34ba2c21c7a": "$0.000000957896146138212"
-			}
-		}
-	}
-}
-			`,
-			),
-			expected: types.NewPriceResponse(
-				types.ResolvedPrices{},
-				types.UnResolvedPrices{
-					mogusd: providertypes.UnresolvedResult{
-						ErrorWithCode: providertypes.NewErrorWithCode(
-							fmt.Errorf("bad format"), providertypes.ErrorAPIGeneral),
-					},
-				},
-			),
+			response: testutils.CreateResponseFromJSON(`{
+				"data": {
+					"type": "simple_token_price",
+					"attributes": {
+						"token_prices": {
+							"0x123": "invalid_price"
+						}
+					}
+				}
+			}`),
+			expectError: true,
+			errorCode:   providertypes.ErrorFailedToParsePrice,
 		},
 		{
-			name: "incorrect attribute",
-			cps: []types.ProviderTicker{
-				mogusd,
+			name: "missing price for ticker",
+			ticker: types.DefaultProviderTicker{
+				OffChainTicker: "0x123",
+				JSON:           `{"network": "eth", "address": "0x123"}`,
 			},
-			response: testutils.CreateResponseFromJSON(
-				`
-{
-	"data": {
-		"id": "8ab62c52-6df2-4613-ad2d-dab08e9e4c8e",
-		"type": "bad_price",
-		"attributes": {
-		"token_prices": {
-				"0xaaee1a9723aadb7afa2810263653a34ba2c21c7a": "0.000000957896146138212"
-			}
-		}
-	}
-}
-			`,
-			),
-			expected: types.NewPriceResponse(
-				types.ResolvedPrices{},
-				types.UnResolvedPrices{
-					mogusd: providertypes.UnresolvedResult{
-						ErrorWithCode: providertypes.NewErrorWithCode(
-							fmt.Errorf("bad format"), providertypes.ErrorAPIGeneral),
-					},
-				},
-			),
-		},
-		{
-			name: "unable to parse json",
-			cps: []types.ProviderTicker{
-				mogusd,
-			},
-			response: testutils.CreateResponseFromJSON(
-				`
-toms obvious but not minimal language
-			`,
-			),
-			expected: types.NewPriceResponse(
-				types.ResolvedPrices{},
-				types.UnResolvedPrices{
-					mogusd: providertypes.UnresolvedResult{
-						ErrorWithCode: providertypes.NewErrorWithCode(
-							fmt.Errorf("bad format"), providertypes.ErrorAPIGeneral),
-					},
-				},
-			),
-		},
-		{
-			name: "multiple currency pairs to parse response for",
-			cps: []types.ProviderTicker{
-				mogusd,
-				pepeusd,
-			},
-			response: testutils.CreateResponseFromJSON(
-				`
-{
-	"data": {
-		"id": "8ab62c52-6df2-4613-ad2d-dab08e9e4c8e",
-		"type": "simple_token_price",
-		"attributes": {
-			"token_prices": {
-					"0xaaee1a9723aadb7afa2810263653a34ba2c21c7a": "0.000000657896146138212",
-					"0x6982508145454Ce325dDbE47a25d4ec3d2311933": "0.000000957896146138212"
-			}
-		}
-	}
-}
-			`,
-			),
-			expected: types.NewPriceResponse(
-				types.ResolvedPrices{
-					mogusd: {
-						Value: big.NewFloat(0.000000657896146138212),
-					},
-					pepeusd: {
-						Value: big.NewFloat(0.000000957896146138212),
-					},
-				},
-				types.UnResolvedPrices{},
-			),
+			response: testutils.CreateResponseFromJSON(`{
+				"data": {
+					"type": "simple_token_price",
+					"attributes": {
+						"token_prices": {}
+					}
+				}
+			}`),
+			expectError: true,
+			errorCode:   providertypes.ErrorNoResponse,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			h, err := geckoterminal.NewAPIHandler(geckoterminal.DefaultETHAPIConfig)
+			h, err := NewAPIHandler(DefaultETHAPIConfig)
 			require.NoError(t, err)
 
-			// Update the cache since it is assumed that createURL is executed before ParseResponse.
-			_, err = h.CreateURL(tc.cps)
+			// First create URL to populate cache
+			_, err = h.CreateURL([]types.ProviderTicker{tc.ticker})
 			require.NoError(t, err)
 
-			now := time.Now()
-			resp := h.ParseResponse(tc.cps, tc.response)
+			resp := h.ParseResponse([]types.ProviderTicker{tc.ticker}, tc.response)
 
-			require.Len(t, resp.Resolved, len(tc.expected.Resolved))
-			require.Len(t, resp.UnResolved, len(tc.expected.UnResolved))
-
-			for cp, result := range tc.expected.Resolved {
-				require.Contains(t, resp.Resolved, cp)
-				r := resp.Resolved[cp]
-				require.Equal(t, result.Value.SetPrec(18), r.Value.SetPrec(18))
-				require.True(t, r.Timestamp.After(now))
-			}
-
-			for cp := range tc.expected.UnResolved {
-				require.Contains(t, resp.UnResolved, cp)
-				require.Error(t, resp.UnResolved[cp])
+			if tc.expectError {
+				require.Len(t, resp.Resolved, 0)
+				require.Len(t, resp.UnResolved, 1)
+				require.Equal(t, tc.errorCode, resp.UnResolved[tc.ticker].ErrorWithCode.Code())
+			} else {
+				require.Len(t, resp.Resolved, 1)
+				require.Len(t, resp.UnResolved, 0)
+				price, _ := resp.Resolved[tc.ticker].Value.Float64()
+				require.InDelta(t, tc.expectedPrice, price, 0.0001)
+				require.True(t, resp.Resolved[tc.ticker].Timestamp.After(time.Now().Add(-time.Second)))
 			}
 		})
 	}
