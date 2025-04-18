@@ -3,7 +3,6 @@ package oracle
 import (
 	"context"
 	"fmt"
-	"github.com/skip-mev/connect/v2/providers/apis/defi/uniswapv3"
 	"go.uber.org/zap"
 	"net/http"
 	"strings"
@@ -18,6 +17,7 @@ import (
 	"github.com/skip-mev/connect/v2/providers/apis/defi/curve"
 	"github.com/skip-mev/connect/v2/providers/apis/defi/osmosis"
 	"github.com/skip-mev/connect/v2/providers/apis/defi/raydium"
+	"github.com/skip-mev/connect/v2/providers/apis/defi/uniswapv3"
 	"github.com/skip-mev/connect/v2/providers/apis/geckoterminal"
 	"github.com/skip-mev/connect/v2/providers/apis/kraken"
 	"github.com/skip-mev/connect/v2/providers/apis/polymarket"
