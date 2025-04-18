@@ -61,11 +61,8 @@ func (h *APIHandler) CreateURL(
 	if metadata.Network == "" {
 		return h.api.Endpoints[0].URL, fmt.Errorf("network not found in metadata")
 	}
-	if metadata.BaseTokenAddress == "" {
-		return h.api.Endpoints[0].URL, fmt.Errorf("base token address not found in metadata")
-	}
 
-	return fmt.Sprintf(h.api.Endpoints[0].URL, metadata.Network, metadata.BaseTokenAddress), nil
+	return fmt.Sprintf(h.api.Endpoints[0].URL, metadata.Network, ticker.GetOffChainTicker()), nil
 }
 
 func (h *APIHandler) ParseResponse(
