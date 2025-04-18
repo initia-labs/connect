@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
+	"reflect"
 	"time"
 
 	"github.com/skip-mev/connect/v2/oracle/config"
@@ -45,20 +45,27 @@ func NewAPIHandler(
 func (h *APIHandler) CreateURL(
 	tickers []types.ProviderTicker,
 ) (string, error) {
-	var addresses = make([]string, len(tickers))
-	var network string
-	for i, ticker := range tickers {
-		h.cache.Add(ticker)
-		metadataJSON := ticker.GetJSON()
-		var metadata CurveMetadata
-		if err := json.Unmarshal([]byte(metadataJSON), &metadata); err != nil {
-			return h.api.Endpoints[0].URL, fmt.Errorf("failed to parse metadata JSON: %w", err)
-		}
-		network = metadata.Network
-		addresses[i] = metadata.BaseTokenAddress
+	if len(tickers) == 0 {
+		return "", fmt.Errorf("no tickers provided")
 	}
 
-	return fmt.Sprintf(h.api.Endpoints[0].URL, network, strings.Join(addresses, ",")), nil
+	ticker := tickers[0]
+	h.cache.Add(ticker)
+
+	var metadata CurveMetadata
+	metadataJSON := ticker.GetJSON()
+	if err := json.Unmarshal([]byte(metadataJSON), &metadata); err != nil {
+		return h.api.Endpoints[0].URL, fmt.Errorf("failed to parse metadata JSON: %w", err)
+	}
+
+	if metadata.Network == "" {
+		return h.api.Endpoints[0].URL, fmt.Errorf("network not found in metadata")
+	}
+	if metadata.BaseTokenAddress == "" {
+		return h.api.Endpoints[0].URL, fmt.Errorf("base token address not found in metadata")
+	}
+
+	return fmt.Sprintf(h.api.Endpoints[0].URL, metadata.Network, metadata.BaseTokenAddress), nil
 }
 
 func (h *APIHandler) ParseResponse(
@@ -77,6 +84,14 @@ func (h *APIHandler) ParseResponse(
 		resolved   = make(types.ResolvedPrices)
 		unresolved = make(types.UnResolvedPrices)
 	)
+
+	if reflect.DeepEqual(result.Data, CurveMetadata{}) {
+		err := fmt.Errorf("received empty data in response")
+		return types.NewPriceResponseWithErr(
+			tickers,
+			providertypes.NewErrorWithCode(err, providertypes.ErrorNoResponse),
+		)
+	}
 
 	data := result.Data
 	ticker, ok := h.cache.FromOffChainTicker(data.Address)
