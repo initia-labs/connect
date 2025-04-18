@@ -3,10 +3,10 @@ package oracle
 import (
 	"context"
 	"fmt"
+	"github.com/skip-mev/connect/v2/providers/apis/defi/uniswapv3"
+	"go.uber.org/zap"
 	"net/http"
 	"strings"
-
-	"go.uber.org/zap"
 
 	"github.com/skip-mev/connect/v2/oracle/config"
 	"github.com/skip-mev/connect/v2/oracle/types"
@@ -15,9 +15,9 @@ import (
 	coinbaseapi "github.com/skip-mev/connect/v2/providers/apis/coinbase"
 	"github.com/skip-mev/connect/v2/providers/apis/coingecko"
 	"github.com/skip-mev/connect/v2/providers/apis/coinmarketcap"
+	"github.com/skip-mev/connect/v2/providers/apis/defi/curve"
 	"github.com/skip-mev/connect/v2/providers/apis/defi/osmosis"
 	"github.com/skip-mev/connect/v2/providers/apis/defi/raydium"
-	"github.com/skip-mev/connect/v2/providers/apis/defi/uniswapv3"
 	"github.com/skip-mev/connect/v2/providers/apis/geckoterminal"
 	"github.com/skip-mev/connect/v2/providers/apis/kraken"
 	"github.com/skip-mev/connect/v2/providers/apis/polymarket"
@@ -98,6 +98,8 @@ func APIQueryHandlerFactory(
 		apiPriceFetcher, err = osmosis.NewAPIPriceFetcher(logger, cfg.API, metrics)
 	case providerName == polymarket.Name:
 		apiDataHandler, err = polymarket.NewAPIHandler(cfg.API)
+	case providerName == curve.Name:
+		apiDataHandler, err = curve.NewAPIHandler(cfg.API)
 	default:
 		return nil, fmt.Errorf("unknown provider: %s", cfg.Name)
 	}

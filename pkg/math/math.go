@@ -165,3 +165,10 @@ func GetScalingFactor(
 	}
 	return new(big.Float).Quo(big.NewFloat(1), exp)
 }
+
+// Float64ToBigFloat converts a float64 to a big.Float.
+func Float64ToBigFloat(val float64) *big.Float {
+	bigFloat := new(big.Float)
+	bigFloat.SetFloat64(val)
+	return bigFloat
+}
