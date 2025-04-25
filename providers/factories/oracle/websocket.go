@@ -14,6 +14,7 @@ import (
 	wsmetrics "github.com/skip-mev/connect/v2/providers/base/websocket/metrics"
 	"github.com/skip-mev/connect/v2/providers/websockets/binance"
 	"github.com/skip-mev/connect/v2/providers/websockets/bitfinex"
+	"github.com/skip-mev/connect/v2/providers/websockets/bitget"
 	"github.com/skip-mev/connect/v2/providers/websockets/bitstamp"
 	"github.com/skip-mev/connect/v2/providers/websockets/bybit"
 	coinbasews "github.com/skip-mev/connect/v2/providers/websockets/coinbase"
@@ -100,6 +101,8 @@ func WebSocketQueryHandlerFactory(
 		wsDataHandler, err = mexc.NewWebSocketDataHandler(logger, cfg.WebSocket)
 	case okx.Name:
 		wsDataHandler, err = okx.NewWebSocketDataHandler(logger, cfg.WebSocket)
+	case bitget.Name:
+		wsDataHandler, err = bitget.NewWebSocketDataHandler(logger, cfg.WebSocket)
 	default:
 		return nil, fmt.Errorf("unknown provider: %s", cfg.Name)
 	}
