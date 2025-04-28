@@ -61,6 +61,9 @@ func (h *APIHandler) CreateURL(
 	if metadata.Network == "" {
 		return h.api.Endpoints[0].URL, fmt.Errorf("network not found in metadata")
 	}
+	if !IsSupportedNetwork(metadata.Network) {
+		return h.api.Endpoints[0].URL, fmt.Errorf("network not supported: %s", metadata.Network)
+	}
 
 	return fmt.Sprintf(h.api.Endpoints[0].URL, metadata.Network, ticker.GetOffChainTicker()), nil
 }
