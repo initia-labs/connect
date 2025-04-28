@@ -9,6 +9,7 @@ import (
 	coinbaseapi "github.com/skip-mev/connect/v2/providers/apis/coinbase"
 	"github.com/skip-mev/connect/v2/providers/apis/coingecko"
 	"github.com/skip-mev/connect/v2/providers/apis/coinmarketcap"
+	"github.com/skip-mev/connect/v2/providers/apis/defi/curve"
 	"github.com/skip-mev/connect/v2/providers/apis/defi/osmosis"
 	"github.com/skip-mev/connect/v2/providers/apis/defi/raydium"
 	"github.com/skip-mev/connect/v2/providers/apis/defi/uniswapv3"
@@ -20,6 +21,7 @@ import (
 	"github.com/skip-mev/connect/v2/providers/volatile"
 	binancews "github.com/skip-mev/connect/v2/providers/websockets/binance"
 	"github.com/skip-mev/connect/v2/providers/websockets/bitfinex"
+	"github.com/skip-mev/connect/v2/providers/websockets/bitget"
 	"github.com/skip-mev/connect/v2/providers/websockets/bitstamp"
 	"github.com/skip-mev/connect/v2/providers/websockets/bybit"
 	"github.com/skip-mev/connect/v2/providers/websockets/coinbase"
@@ -56,7 +58,11 @@ var (
 			API:  osmosis.DefaultAPIConfig,
 			Type: types.ConfigType,
 		},
-
+		{
+			Name: curve.Name,
+			API:  curve.DefaultAPIConfig,
+			Type: types.ConfigType,
+		},
 		// Exchange API providers
 		{
 			Name: binanceapi.Name,
@@ -158,6 +164,11 @@ var (
 		{
 			Name:      okx.Name,
 			WebSocket: okx.DefaultWebSocketConfig,
+			Type:      types.ConfigType,
+		},
+		{
+			Name:      bitget.Name,
+			WebSocket: bitget.DefaultWebSocketConfig,
 			Type:      types.ConfigType,
 		},
 
