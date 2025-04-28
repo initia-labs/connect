@@ -10,7 +10,7 @@ const (
 
 	URL = "wss://ws.bitget.com/v2/ws/public"
 
-	DefaultPingInterval = 15 * time.Second
+	DefaultPingInterval = 30 * time.Second
 )
 
 var DefaultWebSocketConfig = config.WebSocketConfig{
