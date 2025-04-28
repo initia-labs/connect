@@ -14,7 +14,7 @@ const (
 	Name = "curve_finance_api"
 
 	// https://prices.curve.fi/v1/usd_price/ethereum/0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee
-	URL = "https://prices.curve.fi/v1/usd_price/%s/%s"
+	URL = "https://prices.curve.fi/v1/usd_price/ethereum"
 )
 
 var DefaultAPIConfig = config.APIConfig{
@@ -38,7 +38,7 @@ type (
 	//}
 
 	CurveResponse struct {
-		Data CurveData `json:"data"`
+		Data []CurveData `json:"data"`
 	}
 
 	CurveData struct {

@@ -49,23 +49,24 @@ func (h *APIHandler) CreateURL(
 		return "", fmt.Errorf("no tickers provided")
 	}
 
-	ticker := tickers[0]
-	h.cache.Add(ticker)
+	for _, ticker := range tickers {
+		h.cache.Add(ticker)
 
-	var metadata CurveMetadata
-	metadataJSON := ticker.GetJSON()
-	if err := json.Unmarshal([]byte(metadataJSON), &metadata); err != nil {
-		return h.api.Endpoints[0].URL, fmt.Errorf("failed to parse metadata JSON: %w", err)
+		var metadata CurveMetadata
+		metadataJSON := ticker.GetJSON()
+		if err := json.Unmarshal([]byte(metadataJSON), &metadata); err != nil {
+			return h.api.Endpoints[0].URL, fmt.Errorf("failed to parse metadata JSON: %w", err)
+		}
+
+		if metadata.Network == "" {
+			return h.api.Endpoints[0].URL, fmt.Errorf("network not found in metadata")
+		}
+		if !IsSupportedNetwork(metadata.Network) {
+			return h.api.Endpoints[0].URL, fmt.Errorf("network not supported: %s", metadata.Network)
+		}
 	}
 
-	if metadata.Network == "" {
-		return h.api.Endpoints[0].URL, fmt.Errorf("network not found in metadata")
-	}
-	if !IsSupportedNetwork(metadata.Network) {
-		return h.api.Endpoints[0].URL, fmt.Errorf("network not supported: %s", metadata.Network)
-	}
-
-	return fmt.Sprintf(h.api.Endpoints[0].URL, metadata.Network, ticker.GetOffChainTicker()), nil
+	return fmt.Sprintf(h.api.Endpoints[0].URL), nil
 }
 
 func (h *APIHandler) ParseResponse(
@@ -92,20 +93,21 @@ func (h *APIHandler) ParseResponse(
 			providertypes.NewErrorWithCode(err, providertypes.ErrorNoResponse),
 		)
 	}
+	
+	for _, data := range result.Data {
+		ticker, ok := h.cache.FromOffChainTicker(data.Address)
+		if !ok {
+			err := fmt.Errorf("no ticker for address %s", data.Address)
+			return types.NewPriceResponseWithErr(
+				tickers,
+				providertypes.NewErrorWithCode(err, providertypes.ErrorUnknownPair),
+			)
+		}
 
-	data := result.Data
-	ticker, ok := h.cache.FromOffChainTicker(data.Address)
-	if !ok {
-		err := fmt.Errorf("no ticker for address %s", data.Address)
-		return types.NewPriceResponseWithErr(
-			tickers,
-			providertypes.NewErrorWithCode(err, providertypes.ErrorUnknownPair),
-		)
+		price := math.Float64ToBigFloat(data.UsdPrice)
+
+		resolved[ticker] = types.NewPriceResult(price, time.Now().UTC())
 	}
-
-	price := math.Float64ToBigFloat(data.UsdPrice)
-
-	resolved[ticker] = types.NewPriceResult(price, time.Now().UTC())
 
 	for _, ticker := range tickers {
 		_, resolvedOk := resolved[ticker]
