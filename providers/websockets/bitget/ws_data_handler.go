@@ -1,6 +1,7 @@
 package bitget
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -55,13 +56,15 @@ func (h *WebSocketHandler) HandleMessage(
 	)
 
 	// ping
-	if string(message) == string(OperationPing) {
+	if string(message) == string(OperationPong) {
 		h.logger.Debug("received ping response")
 		return resp, nil, nil
 	}
 
 	// subscription response
-	if err := json.Unmarshal(message, &subscribeResp); err == nil {
+	dec := json.NewDecoder(bytes.NewReader(message))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&subscribeResp); err == nil {
 		if subscribeResp.Event == string(OperationSubscribe) {
 			h.logger.Debug("received subscription response")
 			return resp, nil, nil

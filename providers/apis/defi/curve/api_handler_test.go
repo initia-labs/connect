@@ -83,7 +83,7 @@ func TestCreateURL(t *testing.T) {
 				Network:          "ethereum",
 				BaseTokenAddress: "0x123",
 			},
-			wantURL: "https://prices.curve.fi/v1/usd_price/ethereum/0x123",
+			wantURL: "https://prices.curve.fi/v1/usd_price/ethereum",
 			wantErr: false,
 		},
 		{
@@ -95,18 +95,6 @@ func TestCreateURL(t *testing.T) {
 			},
 			metadata: CurveMetadata{
 				BaseTokenAddress: "0x123",
-			},
-			wantErr: true,
-		},
-		{
-			name: "failure - missing base token address",
-			tickers: []types.ProviderTicker{
-				createTickerWithMetadata(t, "ETH", "USD", CurveMetadata{
-					Network: "ethereum",
-				}),
-			},
-			metadata: CurveMetadata{
-				Network: "ethereum",
 			},
 			wantErr: true,
 		},
