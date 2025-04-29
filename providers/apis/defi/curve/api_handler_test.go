@@ -155,7 +155,7 @@ func TestParseResponse(t *testing.T) {
 				OffChainTicker: "0xAddress",
 				JSON:           `{"network":"ethereum","base_token_address":"0xAddress"}`,
 			},
-			response:    testutils.CreateResponseFromJSON(`{"data": {whole list of ethereum ...}}`),
+			response:    testutils.CreateResponseFromJSON(`"detail":"Token data not found"}`),
 			expectError: true,
 			errorCode:   providertypes.ErrorFailedToDecode,
 		},
