@@ -1,6 +1,7 @@
 package bitget
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -55,13 +56,15 @@ func (h *WebSocketHandler) HandleMessage(
 	)
 
 	// ping
-	if string(message) == string(OperationPing) {
+	if string(message) == string(OperationPong) {
 		h.logger.Debug("received ping response")
 		return resp, nil, nil
 	}
 
 	// subscription response
-	if err := json.Unmarshal(message, &subscribeResp); err == nil {
+	subDec := json.NewDecoder(bytes.NewReader(message))
+	subDec.DisallowUnknownFields()
+	if err := subDec.Decode(&subscribeResp); err == nil {
 		if subscribeResp.Event == string(OperationSubscribe) {
 			h.logger.Debug("received subscription response")
 			return resp, nil, nil
@@ -69,7 +72,9 @@ func (h *WebSocketHandler) HandleMessage(
 	}
 
 	// price
-	if err := json.Unmarshal(message, &update); err == nil {
+	priceDec := json.NewDecoder(bytes.NewReader(message))
+	priceDec.DisallowUnknownFields()
+	if err := priceDec.Decode(&update); err == nil {
 		resp, err = h.parseTickerUpdate(update)
 		if err != nil {
 			return resp, nil, fmt.Errorf("failed to parse ticker update message: %w", err)

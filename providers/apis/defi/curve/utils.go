@@ -14,7 +14,7 @@ const (
 	Name = "curve_finance_api"
 
 	// https://prices.curve.fi/v1/usd_price/ethereum/0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee
-	URL = "https://prices.curve.fi/v1/usd_price/%s/%s"
+	URL = "https://prices.curve.fi/v1/usd_price/ethereum"
 )
 
 var DefaultAPIConfig = config.APIConfig{
@@ -30,15 +30,15 @@ var DefaultAPIConfig = config.APIConfig{
 
 type (
 	//{
-	//	"data": {
+	//	"data":[{
 	//		"address": "0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee",
 	//		"usd_price": 1674.1742629502855,
 	//		"last_updated": "2025-04-16T06:04:23"
-	//	}
+	//	},...]
 	//}
 
 	CurveResponse struct {
-		Data CurveData `json:"data"`
+		Data []CurveData `json:"data"`
 	}
 
 	CurveData struct {

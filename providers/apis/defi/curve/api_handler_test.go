@@ -83,7 +83,7 @@ func TestCreateURL(t *testing.T) {
 				Network:          "ethereum",
 				BaseTokenAddress: "0x123",
 			},
-			wantURL: "https://prices.curve.fi/v1/usd_price/ethereum/0x123",
+			wantURL: "https://prices.curve.fi/v1/usd_price/ethereum",
 			wantErr: false,
 		},
 		{
@@ -95,18 +95,6 @@ func TestCreateURL(t *testing.T) {
 			},
 			metadata: CurveMetadata{
 				BaseTokenAddress: "0x123",
-			},
-			wantErr: true,
-		},
-		{
-			name: "failure - missing base token address",
-			tickers: []types.ProviderTicker{
-				createTickerWithMetadata(t, "ETH", "USD", CurveMetadata{
-					Network: "ethereum",
-				}),
-			},
-			metadata: CurveMetadata{
-				Network: "ethereum",
 			},
 			wantErr: true,
 		},
@@ -142,14 +130,44 @@ func TestParseResponse(t *testing.T) {
 				JSON:           `{"network":"ethereum","base_token_address":"0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee"}`,
 			},
 			response: testutils.CreateResponseFromJSON(`{
-                "data": {
+                "data": [{
                     "address": "0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee",
                     "usd_price": 1674.1742629502855,
                     "last_updated": "2025-04-16T06:04:23"
-                }
+                }]
             }`),
 			expectedPrice: 1674.1742629502855,
 			expectError:   false,
+		},
+		{
+			name: "invalid JSON response",
+			ticker: types.DefaultProviderTicker{
+				OffChainTicker: "0xAddress",
+				JSON:           `{"network":"ethereum","base_token_address":"0xAddress"}`,
+			},
+			response:    testutils.CreateResponseFromJSON(`{invalid json`),
+			expectError: true,
+			errorCode:   providertypes.ErrorFailedToDecode,
+		},
+		{
+			name: "empty data response",
+			ticker: types.DefaultProviderTicker{
+				OffChainTicker: "0xAddress",
+				JSON:           `{"network":"ethereum","base_token_address":"0xAddress"}`,
+			},
+			response:    testutils.CreateResponseFromJSON(`{"data": {whole list of ethereum ...}}`),
+			expectError: true,
+			errorCode:   providertypes.ErrorFailedToDecode,
+		},
+		{
+			name: "unresolved ticker",
+			ticker: types.DefaultProviderTicker{
+				OffChainTicker: "0xUnknownAddress",
+				JSON:           `{"network":"ethereum","base_token_address":"0xUnknownAddress"}`,
+			},
+			response:    testutils.CreateResponseFromJSON(`{"detail":"Token data not found"}`),
+			expectError: true,
+			errorCode:   providertypes.ErrorNoResponse,
 		},
 	}
 
