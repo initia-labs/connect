@@ -13,8 +13,8 @@ import (
 const (
 	Name = "curve_finance_api"
 
-	// https://prices.curve.fi/v1/usd_price/ethereum/0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee
-	URL = "https://prices.curve.fi/v1/usd_price/ethereum"
+	// https://prices.curve.finance/v1/usd_price/ethereum/0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee
+	URL = "https://prices.curve.finance/v1/usd_price/ethereum"
 )
 
 var DefaultAPIConfig = config.APIConfig{
