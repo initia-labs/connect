@@ -81,8 +81,6 @@ func (c *ClientImpl) SpotPrice(ctx context.Context, denom string) (WrappedInitia
 		return WrappedInitiaSpotPrice{}, err
 	}
 
-	c.apiMetrics.AddHTTPStatusCode(c.api.Name, resp)
-
 	return WrappedInitiaSpotPrice{
 		InitiaSpotPrice: response,
 		Timestamp:       start.Unix(),
