@@ -73,7 +73,7 @@ func (mc *metadataCache) updateMetadataCache(ticker types.ProviderTicker) (Initi
 	if err != nil {
 		return InitiaMetadata{}, fmt.Errorf("error unmarshalling metadata for ticker %s: %w", ticker.String(), err)
 	}
-	if err := metadata.validataBasic(); err != nil {
+	if err := metadata.ValidateBasic(); err != nil {
 		return InitiaMetadata{}, fmt.Errorf("metadata for ticker %s is invalid: %w", ticker.String(), err)
 	}
 	mc.metadataPerTicker[ticker.String()] = metadata
@@ -86,7 +86,7 @@ type InitiaMetadata struct {
 	LPDenom         string `json:"lp_denom"`
 }
 
-func (im InitiaMetadata) validataBasic() error {
+func (im *InitiaMetadata) ValidateBasic() error {
 	if im.BaseTokenDenom == "" || im.QuoteTokenDenom == "" || im.LPDenom == "" {
 		return fmt.Errorf("base token denom, quote token denom, or lp cannot be empty")
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
+	"net/url"
 	"sync"
 	"time"
 
@@ -62,7 +62,7 @@ func (c *ClientImpl) SpotPrice(ctx context.Context, denom string) (WrappedInitia
 		c.apiMetrics.ObserveProviderResponseLatency(c.api.Name, c.redactedURL, time.Since(start))
 	}()
 
-	urlEncodedDenom := strings.Replace(denom, "/", "%2F", 1)
+	urlEncodedDenom := url.PathEscape(denom)
 
 	url, err := CreateURL(c.endpoint.URL, urlEncodedDenom)
 	if err != nil {
@@ -154,7 +154,15 @@ func (mc *MultiClientImpl) SpotPrice(ctx context.Context, denom string) (Wrapped
 
 	wg.Wait()
 
-	return mc.latestSpotPriceResponse(resps)
+	result, err := mc.latestSpotPriceResponse(resps)
+	if err != nil {
+		return WrappedInitiaSpotPrice{}, err
+	}
+	if result.Timestamp == 0 {
+		return WrappedInitiaSpotPrice{}, fmt.Errorf("no valid responses found")
+	}
+
+	return result, nil
 }
 
 func (mc *MultiClientImpl) latestSpotPriceResponse(responses []WrappedInitiaSpotPrice) (WrappedInitiaSpotPrice, error) {

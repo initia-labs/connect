@@ -37,7 +37,7 @@ func NewAPIPriceFetcher(logger *zap.Logger, api config.APIConfig, apiMetrics met
 		return nil, fmt.Errorf("invalid api name; expected %s, got %s", Name, api.Name)
 	}
 	if !api.Enabled {
-		return nil, fmt.Errorf("api is not disabled")
+		return nil, fmt.Errorf("api is disabled")
 	}
 	if apiMetrics == nil {
 		return nil, fmt.Errorf("metrics cannot be nil")
@@ -83,8 +83,7 @@ func (pf *APIPriceFetcher) Fetch(
 	}
 
 	pf.logger.Info("fetching for tickers", zap.Any("tickers", tickers))
-
-	// make sure metadata cache is set properly
+	
 	for _, ticker := range tickers {
 		_, found := pf.metadataPerTicker.getMetadataPerTicker(ticker)
 		if !found {
@@ -115,7 +114,13 @@ func (pf *APIPriceFetcher) Fetch(
 				return nil
 			}
 
-			price := math.Float64ToBigFloat(resp.Prices[metadata.BaseTokenDenom])
+			rawPrice, found := resp.Prices[metadata.BaseTokenDenom]
+			if !found {
+				unresolvedTickerCallback(ticker, providertypes.NewErrorWithCode(fmt.Errorf("price not found in response"), providertypes.ErrorAPIGeneral))
+				return nil
+			}
+
+			price := math.Float64ToBigFloat(rawPrice)
 			resolvedTickerCallback(ticker, price)
 
 			return nil
