@@ -124,6 +124,15 @@ This file describes how to configure and use custom endpoints in your Connect co
           }
         ]
       }
+    },
+    "uniswapv3_api-ethereum": {
+      "api": {
+        "endpoints": [
+          {
+            "url": "https://rpc.ankr.com/eth/{API-KEY}"
+          }
+        ]
+      }
     }
   }
 }

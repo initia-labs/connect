@@ -48,7 +48,13 @@ func (h *APIHandler) CreateURL(
 	if len(tickers) == 0 {
 		return "", fmt.Errorf("no tickers provided")
 	}
-
+	if len(tickers) > 1 {
+		return "", fmt.Errorf("only one ticker is supported, got %d", len(tickers))
+	}
+	if h.api.Atomic || h.api.BatchSize > 1 {
+		return "", fmt.Errorf("atomic or batch size > 1 not supported")
+	}
+	
 	ticker := tickers[0]
 	h.cache.Add(ticker)
 
