@@ -74,7 +74,7 @@ func TestCreateURL(t *testing.T) {
 		{
 			name: "success - single ticker",
 			tickers: []types.ProviderTicker{
-				createTickerWithMetadata(t, "ETH", "USD", CurveMetadata{
+				createTickerWithMetadata(t, "0x123", "", CurveMetadata{
 					Network:          "ethereum",
 					BaseTokenAddress: "0x123",
 				}),
@@ -83,7 +83,7 @@ func TestCreateURL(t *testing.T) {
 				Network:          "ethereum",
 				BaseTokenAddress: "0x123",
 			},
-			wantURL: "https://prices.curve.fi/v1/usd_price/ethereum",
+			wantURL: "https://prices.curve.fi/v1/usd_price/ethereum/0x123/",
 			wantErr: false,
 		},
 		{
@@ -130,11 +130,11 @@ func TestParseResponse(t *testing.T) {
 				JSON:           `{"network":"ethereum","base_token_address":"0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee"}`,
 			},
 			response: testutils.CreateResponseFromJSON(`{
-                "data": [{
+                "data": {
                     "address": "0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee",
                     "usd_price": 1674.1742629502855,
                     "last_updated": "2025-04-16T06:04:23"
-                }]
+                }
             }`),
 			expectedPrice: 1674.1742629502855,
 			expectError:   false,
@@ -155,7 +155,7 @@ func TestParseResponse(t *testing.T) {
 				OffChainTicker: "0xAddress",
 				JSON:           `{"network":"ethereum","base_token_address":"0xAddress"}`,
 			},
-			response:    testutils.CreateResponseFromJSON(`{"data": {whole list of ethereum ...}}`),
+			response:    testutils.CreateResponseFromJSON(`"detail":"Token data not found"}`),
 			expectError: true,
 			errorCode:   providertypes.ErrorFailedToDecode,
 		},
@@ -167,7 +167,7 @@ func TestParseResponse(t *testing.T) {
 			},
 			response:    testutils.CreateResponseFromJSON(`{"detail":"Token data not found"}`),
 			expectError: true,
-			errorCode:   providertypes.ErrorNoResponse,
+			errorCode:   providertypes.ErrorUnknownPair,
 		},
 	}
 
