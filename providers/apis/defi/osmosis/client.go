@@ -218,11 +218,11 @@ func (mc *MultiClientImpl) SpotPrice(ctx context.Context, poolID uint64, baseAss
 			defer wg.Done()
 			resp, err := client.SpotPrice(ctx, poolID, baseAsset, quoteAsset)
 			if err != nil {
-				mc.logger.Error("failed to spot price in sub client", zap.String("url", url), zap.Error(err))
+				mc.logger.Error("failed to fetch spot price in sub client", zap.String("url", url), zap.Error(err))
 				return
 			}
 
-			mc.logger.Debug("successfully fetched accounts", zap.String("url", url))
+			mc.logger.Debug("successfully fetched spot price", zap.String("url", url))
 
 			resps[index] = resp
 		}(index, mc.clients[i])

@@ -11,6 +11,7 @@ import (
 	"github.com/skip-mev/connect/v2/providers/apis/coingecko"
 	"github.com/skip-mev/connect/v2/providers/apis/coinmarketcap"
 	"github.com/skip-mev/connect/v2/providers/apis/defi/curve"
+	"github.com/skip-mev/connect/v2/providers/apis/defi/initia"
 	"github.com/skip-mev/connect/v2/providers/apis/defi/osmosis"
 	"github.com/skip-mev/connect/v2/providers/apis/defi/raydium"
 	"github.com/skip-mev/connect/v2/providers/apis/defi/uniswapv3"
@@ -62,6 +63,11 @@ var (
 		{
 			Name: curve.Name,
 			API:  curve.DefaultAPIConfig,
+			Type: types.ConfigType,
+		},
+		{
+			Name: initia.Name,
+			API:  initia.DefaultAPIConfig,
 			Type: types.ConfigType,
 		},
 		// Exchange API providers
