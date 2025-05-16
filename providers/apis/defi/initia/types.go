@@ -63,6 +63,8 @@ func (mc *metadataCache) getMetadataPerTicker(ticker types.ProviderTicker) (Init
 	return metadata, ok
 }
 
+// updateMetadataCache updates the metadata cache for a given ticker.
+// It does not override existing metadata already present in the cache.
 func (mc *metadataCache) updateMetadataCache(ticker types.ProviderTicker) (InitiaMetadata, error) {
 	mc.mtx.Lock()
 	defer mc.mtx.Unlock()

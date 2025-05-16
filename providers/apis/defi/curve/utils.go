@@ -8,8 +8,8 @@ import (
 
 // API specification:
 //
-// - https://docs.curve.fi/curve-api/curve-prices/
-// - https://docs.curve.fi/curve-api/curve-api/
+// - https://docs.curve.finance/curve-api/curve-prices/
+// - https://docs.curve.finance/curve-api/curve-api/
 const (
 	Name = "curve_finance_api"
 
