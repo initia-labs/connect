@@ -10,6 +10,7 @@ import (
 	"github.com/skip-mev/connect/v2/oracle/config"
 	"github.com/skip-mev/connect/v2/oracle/types"
 	"github.com/skip-mev/connect/v2/providers/apis/binance"
+	"github.com/skip-mev/connect/v2/providers/apis/bitget"
 	"github.com/skip-mev/connect/v2/providers/apis/bitstamp"
 	coinbaseapi "github.com/skip-mev/connect/v2/providers/apis/coinbase"
 	"github.com/skip-mev/connect/v2/providers/apis/coingecko"
@@ -101,6 +102,8 @@ func APIQueryHandlerFactory(
 		apiDataHandler, err = polymarket.NewAPIHandler(cfg.API)
 	case providerName == curve.Name:
 		apiDataHandler, err = curve.NewAPIHandler(cfg.API)
+	case providerName == bitget.Name:
+		apiDataHandler, err = bitget.NewAPIHandler(cfg.API)
 	case providerName == initia.Name:
 		apiPriceFetcher, err = initia.NewAPIPriceFetcher(logger, cfg.API, metrics)
 	default:

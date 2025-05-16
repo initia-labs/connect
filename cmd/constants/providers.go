@@ -5,6 +5,7 @@ import (
 	"github.com/skip-mev/connect/v2/oracle/constants"
 	"github.com/skip-mev/connect/v2/oracle/types"
 	binanceapi "github.com/skip-mev/connect/v2/providers/apis/binance"
+	bitgetapi "github.com/skip-mev/connect/v2/providers/apis/bitget"
 	bitstampapi "github.com/skip-mev/connect/v2/providers/apis/bitstamp"
 	coinbaseapi "github.com/skip-mev/connect/v2/providers/apis/coinbase"
 	"github.com/skip-mev/connect/v2/providers/apis/coingecko"
@@ -108,6 +109,11 @@ var (
 		{
 			Name: volatile.Name,
 			API:  volatile.DefaultAPIConfig,
+			Type: types.ConfigType,
+		},
+		{
+			Name: bitgetapi.Name,
+			API:  bitgetapi.DefaultAPIConfig,
 			Type: types.ConfigType,
 		},
 		// Exchange WebSocket providers
