@@ -50,26 +50,27 @@ func TestHashCurrencyPairStrategyID(t *testing.T) {
 
 func TestHashCurrencyPairStrategyFromID(t *testing.T) {
 	ok := mocks.NewOracleKeeper(t)
-	ctx := sdk.Context{}
+	ctxH1 := sdk.Context{}.WithBlockHeight(1)
+	ctxH2 := sdk.Context{}.WithBlockHeight(2)
 	strategy := strategies.NewHashCurrencyPairStrategy(ok)
 
 	t.Run("test getting currency pair for currency pair that does not exist in state", func(t *testing.T) {
-		ok.On("GetAllCurrencyPairs", ctx).Return([]connecttypes.CurrencyPair{}).Once()
+		ok.On("GetAllCurrencyPairs", ctxH1).Return([]connecttypes.CurrencyPair{}).Once()
 
 		id, err := strategies.CurrencyPairToHashID(btcusd.String())
 		require.NoError(t, err)
 
-		_, err = strategy.FromID(ctx, id)
+		_, err = strategy.FromID(ctxH1, id)
 		require.Error(t, err)
 	})
 
 	t.Run("test getting currency pair for currency pair that exists in state (no cache)", func(t *testing.T) {
-		ok.On("GetAllCurrencyPairs", ctx).Return([]connecttypes.CurrencyPair{btcusd}).Once()
+		ok.On("GetAllCurrencyPairs", ctxH2).Return([]connecttypes.CurrencyPair{btcusd}).Once()
 
 		id, err := strategies.CurrencyPairToHashID(btcusd.String())
 		require.NoError(t, err)
 
-		cp, err := strategy.FromID(ctx, id)
+		cp, err := strategy.FromID(ctxH2, id)
 		require.NoError(t, err)
 		require.Equal(t, btcusd, cp)
 	})
@@ -78,7 +79,7 @@ func TestHashCurrencyPairStrategyFromID(t *testing.T) {
 		id, err := strategies.CurrencyPairToHashID(btcusd.String())
 		require.NoError(t, err)
 
-		cp, err := strategy.FromID(ctx, id)
+		cp, err := strategy.FromID(ctxH2, id)
 		require.NoError(t, err)
 		require.Equal(t, btcusd, cp)
 	})
