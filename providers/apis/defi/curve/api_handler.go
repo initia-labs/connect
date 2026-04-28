@@ -61,14 +61,14 @@ func (h *APIHandler) CreateURL(
 	var metadata CurveMetadata
 	metadataJSON := ticker.GetJSON()
 	if err := json.Unmarshal([]byte(metadataJSON), &metadata); err != nil {
-		return h.api.Endpoints[0].URL, fmt.Errorf("failed to parse metadata JSON: %w", err)
+		return BaseURL, fmt.Errorf("failed to parse metadata JSON: %w", err)
 	}
 
 	if metadata.Network == "" {
-		return h.api.Endpoints[0].URL, fmt.Errorf("network not found in metadata")
+		return BaseURL, fmt.Errorf("network not found in metadata")
 	}
 	if !IsSupportedNetwork(metadata.Network) {
-		return h.api.Endpoints[0].URL, fmt.Errorf("network not supported: %s", metadata.Network)
+		return BaseURL, fmt.Errorf("network not supported: %s", metadata.Network)
 	}
 
 	return fmt.Sprintf(h.api.Endpoints[0].URL, metadata.Network, ticker.GetOffChainTicker()), nil

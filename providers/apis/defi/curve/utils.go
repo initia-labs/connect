@@ -14,7 +14,8 @@ const (
 	Name = "curve_finance_api"
 
 	// https://prices.curve.finance/v1/usd_price/ethereum/0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee
-	URL = "https://prices.curve.finance/v1/usd_price/%s/%s"
+	BaseURL     = "https://prices.curve.finance/v1/usd_price"
+	URLTemplate = BaseURL + "/%s/%s"
 )
 
 var DefaultAPIConfig = config.APIConfig{
@@ -25,7 +26,7 @@ var DefaultAPIConfig = config.APIConfig{
 	Interval:         20 * time.Second,
 	ReconnectTimeout: 2000 * time.Millisecond,
 	MaxQueries:       1,
-	Endpoints:        []config.Endpoint{{URL: URL}},
+	Endpoints:        []config.Endpoint{{URL: URLTemplate}},
 }
 
 type (
