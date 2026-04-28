@@ -1,4 +1,5 @@
 # Configuration for custom endpoints
+
 This file describes how to configure and use custom endpoints in your Connect connection setup.
 
 ```json oracle.json
@@ -137,7 +138,9 @@ This file describes how to configure and use custom endpoints in your Connect co
   }
 }
 ```
+
 with the `oracle.json` file path, enther the following command to run connect.
+
 ```shell
 connect --oracle-config path/to/oracle.json
 ```

@@ -83,7 +83,7 @@ func TestCreateURL(t *testing.T) {
 				Network:          "ethereum",
 				BaseTokenAddress: "0x123",
 			},
-			wantURL: "https://prices.curve.fi/v1/usd_price/ethereum/0x123/",
+			wantURL: "https://prices.curve.finance/v1/usd_price/ethereum/0x123/",
 			wantErr: false,
 		},
 		{

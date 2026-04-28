@@ -24,6 +24,7 @@ func NewDeltaCurrencyPairStrategy(oracleKeeper OracleKeeper) *DeltaCurrencyPairS
 	return &DeltaCurrencyPairStrategy{
 		DefaultCurrencyPairStrategy: NewDefaultCurrencyPairStrategy(oracleKeeper),
 		cache:                       make(map[connecttypes.CurrencyPair]*big.Int, DefaultCacheInitialCapacity),
+		previousHeight:              -1,
 	}
 }
 

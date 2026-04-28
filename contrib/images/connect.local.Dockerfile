@@ -1,5 +1,7 @@
 FROM ghcr.io/skip-mev/connect-dev-base AS builder
 
+ENV GOTOOLCHAIN=auto
+
 WORKDIR /src/connect
 
 COPY go.mod .

@@ -570,7 +570,7 @@ func TestWebSocketProvider(t *testing.T) {
 				unchangedResolved := map[connecttypes.CurrencyPair]providertypes.ResolvedResult[*big.Int]{
 					pairs[0]: {
 						Value:        big.NewInt(100),
-						Timestamp:    time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+						Timestamp:    time.Date(9999, 1, 1, 0, 0, 0, 0, time.UTC),
 						ResponseCode: providertypes.ResponseCodeUnchanged,
 					},
 				}

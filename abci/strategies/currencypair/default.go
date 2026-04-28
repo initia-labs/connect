@@ -27,8 +27,9 @@ type DefaultCurrencyPairStrategy struct {
 // NewDefaultCurrencyPairStrategy returns a new DefaultCurrencyPairStrategy instance.
 func NewDefaultCurrencyPairStrategy(oracleKeeper OracleKeeper) *DefaultCurrencyPairStrategy {
 	strategy := &DefaultCurrencyPairStrategy{
-		oracleKeeper: oracleKeeper,
-		idCache:      make(map[uint64]connecttypes.CurrencyPair, DefaultCacheInitialCapacity),
+		oracleKeeper:   oracleKeeper,
+		idCache:        make(map[uint64]connecttypes.CurrencyPair, DefaultCacheInitialCapacity),
+		previousHeight: -1,
 	}
 	return strategy
 }
