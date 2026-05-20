@@ -1,6 +1,7 @@
 package codec_test
 
 import (
+	"encoding/binary"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -37,6 +38,24 @@ func TestDefaultVoteExtensionCodec(t *testing.T) {
 		codec := compression.NewDefaultVoteExtensionCodec()
 		_, err := codec.Decode([]byte{})
 		require.Nil(t, err)
+	})
+
+	t.Run("test decoding vote extension rejects unknown protobuf field padding", func(t *testing.T) {
+		ve := vetypes.OracleVoteExtension{
+			Prices: map[uint64][]byte{
+				1: []byte("123"),
+			},
+		}
+
+		codec := compression.NewDefaultVoteExtensionCodec()
+		bz, err := codec.Encode(ve)
+		require.NoError(t, err)
+
+		paddedBz := appendUnknownFieldPadding(bz, 64*1024)
+		require.Greater(t, len(paddedBz), len(bz))
+
+		_, err = codec.Decode(paddedBz)
+		require.Error(t, err)
 	})
 }
 
@@ -80,6 +99,41 @@ func TestCompressionVoteExtensionCodec(t *testing.T) {
 		_, err := codec.Decode([]byte{})
 		require.Nil(t, err)
 	})
+
+	t.Run("test decoding compressed vote extension rejects trailing padding", func(t *testing.T) {
+		ve := vetypes.OracleVoteExtension{
+			Prices: map[uint64][]byte{
+				1: []byte("123"),
+			},
+		}
+
+		codec := compression.NewCompressionVoteExtensionCodec(
+			compression.NewDefaultVoteExtensionCodec(),
+			compression.NewZLibCompressor(),
+		)
+		bz, err := codec.Encode(ve)
+		require.NoError(t, err)
+
+		paddedBz := append(bz, make([]byte, 64*1024)...)
+		require.Greater(t, len(paddedBz), len(bz))
+
+		_, err = codec.Decode(paddedBz)
+		require.Error(t, err)
+	})
+}
+
+func appendUnknownFieldPadding(bz []byte, paddingSize int) []byte {
+	const field7LengthDelimited = byte(7<<3 | 2)
+
+	var lengthBuf [binary.MaxVarintLen64]byte
+	n := binary.PutUvarint(lengthBuf[:], uint64(paddingSize))
+
+	padded := make([]byte, 0, len(bz)+1+n+paddingSize)
+	padded = append(padded, bz...)
+	padded = append(padded, field7LengthDelimited)
+	padded = append(padded, lengthBuf[:n]...)
+	padded = append(padded, make([]byte, paddingSize)...)
+	return padded
 }
 
 func TestDefaultExtendedCommitCodec(t *testing.T) {

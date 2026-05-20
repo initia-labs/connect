@@ -3,6 +3,7 @@ package codec
 import (
 	"bytes"
 	"compress/zlib"
+	"fmt"
 	"io"
 
 	cometabci "github.com/cometbft/cometbft/abci/types"
@@ -54,7 +55,13 @@ func (codec *DefaultVoteExtensionCodec) Encode(ve vetypes.OracleVoteExtension) (
 
 func (codec *DefaultVoteExtensionCodec) Decode(bz []byte) (vetypes.OracleVoteExtension, error) {
 	var ve vetypes.OracleVoteExtension
-	return ve, ve.Unmarshal(bz)
+	if err := ve.Unmarshal(bz); err != nil {
+		return ve, err
+	}
+	if len(bz) != ve.Size() {
+		return ve, fmt.Errorf("non-canonical OracleVoteExtension encoding: got %d bytes, expected %d", len(bz), ve.Size())
+	}
+	return ve, nil
 }
 
 type Compressor interface {
@@ -95,14 +102,25 @@ func (c *ZLibCompressor) Decompress(bz []byte) ([]byte, error) {
 	if len(bz) == 0 {
 		return nil, nil
 	}
-	r, err := zlib.NewReader(bytes.NewReader(bz))
+	br := bytes.NewReader(bz)
+	r, err := zlib.NewReader(br)
 	if err != nil {
 		return nil, err
 	}
-	r.Close()
 
-	// read bytes and return
-	return io.ReadAll(r)
+	decompressed, err := io.ReadAll(r)
+	if err != nil {
+		r.Close()
+		return nil, err
+	}
+	if err := r.Close(); err != nil {
+		return nil, err
+	}
+	if br.Len() != 0 {
+		return nil, fmt.Errorf("zlib stream contains %d trailing bytes", br.Len())
+	}
+
+	return decompressed, nil
 }
 
 // ZStdCompressor is a Compressor that uses zstd to compress / decompress byte arrays, this object is thread-safe.
