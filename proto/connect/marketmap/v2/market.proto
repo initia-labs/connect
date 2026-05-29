@@ -1,10 +1,10 @@
 syntax = "proto3";
 package connect.marketmap.v2;
 
-option go_package = "github.com/skip-mev/connect/v2/x/marketmap/types";
-
-import "gogoproto/gogo.proto";
 import "connect/types/v2/currency_pair.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/skip-mev/connect/v2/x/marketmap/types";
 
 // Market encapsulates a Ticker and its provider-specific configuration.
 message Market {
@@ -14,10 +14,10 @@ message Market {
   // Ticker represents a price feed for a given asset pair i.e. BTC/USD. The
   // price feed is scaled to a number of decimal places and has a minimum number
   // of providers required to consider the ticker valid.
-  Ticker ticker = 1 [ (gogoproto.nullable) = false ];
+  Ticker ticker = 1 [(gogoproto.nullable) = false];
 
   // ProviderConfigs is the list of provider-specific configs for this Market.
-  repeated ProviderConfig provider_configs = 2 [ (gogoproto.nullable) = false ];
+  repeated ProviderConfig provider_configs = 2 [(gogoproto.nullable) = false];
 }
 
 // Ticker represents a price feed for a given asset pair i.e. BTC/USD. The price
@@ -28,8 +28,7 @@ message Ticker {
   option (gogoproto.stringer) = false;
 
   // CurrencyPair is the currency pair for this ticker.
-  connect.types.v2.CurrencyPair currency_pair = 1
-      [ (gogoproto.nullable) = false ];
+  connect.types.v2.CurrencyPair currency_pair = 1 [(gogoproto.nullable) = false];
 
   // Decimals is the number of decimal places for the ticker. The number of
   // decimal places is used to convert the price to a human-readable format.
@@ -48,6 +47,7 @@ message Ticker {
   string metadata_JSON = 15;
 }
 
+// ProviderConfig defines the configuration for a given provider.
 message ProviderConfig {
   // Name corresponds to the name of the provider for which the configuration is
   // being set.
@@ -80,5 +80,5 @@ message MarketMap {
 
   // Markets is the full list of tickers and their associated configurations
   // to be stored on-chain.
-  map<string, Market> markets = 1 [ (gogoproto.nullable) = false ];
+  map<string, Market> markets = 1 [(gogoproto.nullable) = false];
 }

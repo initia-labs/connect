@@ -1,5 +1,6 @@
+# This module represents buf.build/initia-labs/connect
 version: v1
-name: buf.build/skip-mev/connect
+name: buf.build/initia-labs/connect
 
 deps:
   - buf.build/cosmos/cosmos-proto
@@ -11,12 +12,16 @@ breaking:
     - FILE
 lint:
   use:
-    - DEFAULT
+    - STANDARD
     - COMMENTS
     - FILE_LOWER_SNAKE_CASE
   except:
     - SERVICE_SUFFIX
     - RPC_REQUEST_STANDARD_NAME
+    - RPC_RESPONSE_STANDARD_NAME
     - COMMENT_FIELD
     - FIELD_LOWER_SNAKE_CASE
     - PACKAGE_DIRECTORY_MATCH
+    # excluded to avoid breaking changes on existing enum values
+    - ENUM_VALUE_PREFIX
+    - ENUM_ZERO_VALUE_SUFFIX

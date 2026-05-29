@@ -1,12 +1,12 @@
 syntax = "proto3";
 package connect.marketmap.v2;
 
-import "cosmos/msg/v1/msg.proto";
-import "gogoproto/gogo.proto";
-import "cosmos_proto/cosmos.proto";
 import "amino/amino.proto";
 import "connect/marketmap/v2/market.proto";
 import "connect/marketmap/v2/params.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/skip-mev/connect/v2/x/marketmap/types";
 
@@ -26,8 +26,7 @@ service Msg {
 
   // RemoveMarketAuthorities defines a method for removing market authorities
   // from the x/marketmap module. the signer must be the admin.
-  rpc RemoveMarketAuthorities(MsgRemoveMarketAuthorities)
-      returns (MsgRemoveMarketAuthoritiesResponse);
+  rpc RemoveMarketAuthorities(MsgRemoveMarketAuthorities) returns (MsgRemoveMarketAuthoritiesResponse);
 
   // UpsertMarkets wraps both Create / Update markets into a single message.
   // Specifically if a market does not exist it will be created, otherwise it
@@ -50,11 +49,11 @@ message MsgUpsertMarkets {
 
   // Authority is the signer of this transaction.  This authority must be
   // authorized by the module to execute the message.
-  string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // CreateMarkets is the list of all markets to be created for the given
   // transaction.
-  repeated Market markets = 2 [ (gogoproto.nullable) = false ];
+  repeated Market markets = 2 [(gogoproto.nullable) = false];
 }
 
 // MsgUpsertMarketsResponse is the response from the UpsertMarkets API in the
@@ -64,7 +63,7 @@ message MsgUpsertMarketsResponse {
   // UpdatedMarkets is a map between the ticker and whether the market was
   // updated.
   // Deprecated: This field will be empty in all responses.
-  map<string, bool> market_updates = 1 [ deprecated = true ];
+  map<string, bool> market_updates = 1 [deprecated = true];
 }
 
 // MsgCreateMarkets defines a message carrying a payload for creating markets in
@@ -77,14 +76,14 @@ message MsgCreateMarkets {
 
   // Authority is the signer of this transaction.  This authority must be
   // authorized by the module to execute the message.
-  string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // CreateMarkets is the list of all markets to be created for the given
   // transaction.
-  repeated Market create_markets = 2 [ (gogoproto.nullable) = false ];
+  repeated Market create_markets = 2 [(gogoproto.nullable) = false];
 }
 
-// MsgUpdateMarketMapResponse is the response message for MsgUpdateMarketMap.
+// MsgCreateMarketsResponse is the response message for MsgCreateMarkets.
 message MsgCreateMarketsResponse {}
 
 // MsgUpdateMarkets defines a message carrying a payload for updating the
@@ -97,11 +96,11 @@ message MsgUpdateMarkets {
 
   // Authority is the signer of this transaction.  This authority must be
   // authorized by the module to execute the message.
-  string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // UpdateMarkets is the list of all markets to be updated for the given
   // transaction.
-  repeated Market update_markets = 2 [ (gogoproto.nullable) = false ];
+  repeated Market update_markets = 2 [(gogoproto.nullable) = false];
 }
 
 // MsgUpdateMarketsResponse is the response message for MsgUpdateMarkets.
@@ -113,10 +112,10 @@ message MsgParams {
   option (cosmos.msg.v1.signer) = "authority";
 
   // Params defines the new parameters for the x/marketmap module.
-  Params params = 1 [ (gogoproto.nullable) = false ];
+  Params params = 1 [(gogoproto.nullable) = false];
   // Authority defines the authority that is updating the x/marketmap module
   // parameters.
-  string authority = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  string authority = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 // MsgParamsResponse defines the Msg/Params response type.
@@ -133,7 +132,7 @@ message MsgRemoveMarketAuthorities {
 
   // Admin defines the authority that is the x/marketmap
   // Admin account.  This account is set in the module parameters.
-  string admin = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  string admin = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 // MsgRemoveMarketAuthoritiesResponse defines the
@@ -147,7 +146,7 @@ message MsgRemoveMarkets {
 
   // Authority is the signer of this transaction.  This authority must be
   // authorized by the module to execute the message.
-  string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // Markets is the list of markets to remove.
   repeated string markets = 2;

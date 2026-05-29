@@ -213,7 +213,7 @@ test-cover: tidy
 ###                                Protobuf                                 ###
 ###############################################################################
 
-protoVer=0.15.1
+protoVer=0.16.0
 protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
 protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
 
